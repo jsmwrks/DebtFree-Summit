@@ -4,14 +4,8 @@ import { Strategy, Debt, PayoffStep, MotivationalMessage, PaymentEntry } from '.
 import { DebtForm } from './components/DebtForm';
 import { VisualProgress } from './components/VisualProgress';
 import { MonthlyLog } from './components/MonthlyLog';
-import { Simulator } from './components/Simulator';
 import { SpreadsheetUpload } from './components/SpreadsheetUpload';
 import { getEncouragement } from './services/geminiService';
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-});
 
 const App: React.FC = () => {
   const [debts, setDebts] = useState<Debt[]>([]);
@@ -19,15 +13,15 @@ const App: React.FC = () => {
   const [extraPayment, setExtraPayment] = useState<number>(100);
   const [encouragement, setEncouragement] = useState<MotivationalMessage | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
-  const [view, setView] = useState<'dashboard' | 'log' | 'simulator'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'log'>('dashboard');
   const [highestBalanceSeen, setHighestBalanceSeen] = useState(0);
 
   // Add sample debt on initial load if empty
   useEffect(() => {
-    if (debts.length === 0 && highestBalanceSeen === 0) {
+    if (debts.length === 0) {
       const samples = [
-        { id: '1', name: 'Credit Card A', balance: 5000, interestRate: 22, minimumPayment: 150.85 },
-        { id: '2', name: 'Personal Loan', balance: 12000, interestRate: 6.5, minimumPayment: 320.00 }
+        { id: '1', name: 'Credit Card A', balance: 5000, interestRate: 22, minimumPayment: 150 },
+        { id: '2', name: 'Personal Loan', balance: 12000, interestRate: 6.5, minimumPayment: 320 }
       ];
       setDebts(samples);
       setHighestBalanceSeen(samples.reduce((sum, d) => sum + d.balance, 0));
@@ -61,16 +55,6 @@ const App: React.FC = () => {
     let totalPaid = 0;
     let totalInterest = 0;
     const maxMonths = 360;
-
-    // Add Month 0 state
-    steps.push({
-      month: 0,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
-      remainingBalance: currentDebts.reduce((sum, d) => sum + d.balance, 0),
-      totalPaid: 0,
-      totalInterest: 0,
-      payments: []
-    });
 
     while (currentDebts.some(d => d.balance > 0) && month < maxMonths) {
       month++;
@@ -108,6 +92,7 @@ const App: React.FC = () => {
           focusDebt.balance -= payExtra;
           totalPaid += payExtra;
           
+          // Add to existing payment entry or create new one for extra
           const existingEntry = monthlyPayments.find(p => p.debtName === focusDebt.name);
           if (existingEntry) {
             existingEntry.amount += payExtra;
@@ -186,15 +171,6 @@ const App: React.FC = () => {
     setDebts(prev => [...prev, ...identified]);
   };
 
-  const handleClearAll = () => {
-    if (confirm("Are you sure you want to delete all accounts and reset your progress tracker?")) {
-      setDebts([]);
-      setHighestBalanceSeen(0);
-      setEncouragement(null);
-      setExtraPayment(0);
-    }
-  };
-
   const totalCurrentDebt = debts.reduce((sum, d) => sum + d.balance, 0);
   const payoffDate = fullPayoffData[fullPayoffData.length - 1]?.date || 'N/A';
   const progressPercent = highestBalanceSeen > 0 ? ((highestBalanceSeen - totalCurrentDebt) / highestBalanceSeen) * 100 : 0;
@@ -217,19 +193,13 @@ const App: React.FC = () => {
             <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
                <button 
                 onClick={() => setView('dashboard')}
-                className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${view === 'dashboard' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${view === 'dashboard' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
                >
                  Planner
                </button>
                <button 
-                onClick={() => setView('simulator')}
-                className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${view === 'simulator' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
-               >
-                 Simulator
-               </button>
-               <button 
                 onClick={() => setView('log')}
-                className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${view === 'log' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${view === 'log' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
                >
                  Schedule
                </button>
@@ -238,12 +208,12 @@ const App: React.FC = () => {
             <div className="hidden md:flex items-center gap-6">
               <div className="text-right">
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Interest Saved</p>
-                <p className="text-sm font-bold text-emerald-600">+{currencyFormatter.format(interestAvoided)}</p>
+                <p className="text-sm font-bold text-emerald-600">+${Math.round(interestAvoided).toLocaleString()}</p>
               </div>
               <div className="h-8 w-px bg-slate-200"></div>
               <div className="text-right">
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Remaining Debt</p>
-                <p className="text-sm font-bold text-slate-900">{currencyFormatter.format(totalCurrentDebt)}</p>
+                <p className="text-sm font-bold text-slate-900">${totalCurrentDebt.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -274,7 +244,7 @@ const App: React.FC = () => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 mt-8 pb-12">
-        {view === 'dashboard' && (
+        {view === 'dashboard' ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1 space-y-6">
               <section className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
@@ -307,7 +277,7 @@ const App: React.FC = () => {
                       <input 
                         type="number"
                         className="bg-transparent text-3xl font-bold text-slate-900 w-full outline-none"
-                        value={(totalMinPayments + extraPayment).toFixed(2)}
+                        value={totalMinPayments + extraPayment}
                         onChange={(e) => setExtraPayment(Math.max(0, (Number(e.target.value) || 0) - totalMinPayments))}
                       />
                     </div>
@@ -315,14 +285,14 @@ const App: React.FC = () => {
                       type="range" 
                       min="0" 
                       max="10000" 
-                      step="10" 
+                      step="100" 
                       value={extraPayment}
                       onChange={(e) => setExtraPayment(parseInt(e.target.value))}
                       className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                     />
                     <div className="mt-4 flex justify-between text-[11px] font-bold text-slate-500 uppercase">
-                      <span>Minimums: {currencyFormatter.format(totalMinPayments)}</span>
-                      <span className="text-indigo-600 font-bold">Extra: +{currencyFormatter.format(extraPayment)}</span>
+                      <span>Minimums: ${totalMinPayments}</span>
+                      <span className="text-indigo-600 font-bold">Extra: +${extraPayment}</span>
                     </div>
                   </div>
                 </div>
@@ -378,7 +348,7 @@ const App: React.FC = () => {
                   </h3>
                   <div className="flex gap-2">
                     <button 
-                      onClick={handleClearAll}
+                      onClick={() => setDebts([])}
                       className="text-[10px] font-bold text-rose-500 uppercase tracking-widest hover:bg-rose-50 px-3 py-1.5 rounded-lg transition-colors border border-transparent hover:border-rose-100"
                     >
                       Clear All
@@ -404,7 +374,7 @@ const App: React.FC = () => {
                       
                       <div className="flex items-end justify-between">
                         <div>
-                          <p className="text-3xl font-bold text-slate-900 tracking-tight">{currencyFormatter.format(debt.balance)}</p>
+                          <p className="text-3xl font-bold text-slate-900 tracking-tight">${debt.balance.toLocaleString()}</p>
                           <p className="text-[10px] font-medium text-slate-400 mt-2 uppercase">Proj. {Math.ceil(debt.balance / (debt.minimumPayment + (index === 0 ? extraPayment : 0)))} months remaining</p>
                         </div>
                         <button 
@@ -425,27 +395,21 @@ const App: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   <div className="space-y-1">
                     <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Total Interest Saved</p>
-                    <p className="text-3xl font-bold text-emerald-600 tracking-tight">{currencyFormatter.format(interestAvoided)}</p>
+                    <p className="text-3xl font-bold text-emerald-600 tracking-tight">${Math.round(interestAvoided).toLocaleString()}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Freedom Date</p>
                     <p className="text-3xl font-bold text-slate-900 tracking-tight">{payoffDate}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Estimated Lifetime Interest</p>
-                    <p className="text-3xl font-bold text-slate-400 tracking-tight">{currencyFormatter.format(fullPayoffData[fullPayoffData.length-1]?.totalInterest || 0)}</p>
+                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Estimated Lifetime Cost</p>
+                    <p className="text-3xl font-bold text-slate-400 tracking-tight">${Math.round(fullPayoffData[fullPayoffData.length-1]?.totalInterest || 0).toLocaleString()}</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        )}
-
-        {view === 'simulator' && (
-          <Simulator debts={debts} steps={fullPayoffData} strategy={strategy} extraPayment={extraPayment} />
-        )}
-
-        {view === 'log' && (
+        ) : (
           <MonthlyLog data={fullPayoffData} />
         )}
       </main>
