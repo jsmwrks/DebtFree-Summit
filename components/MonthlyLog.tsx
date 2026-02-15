@@ -6,6 +6,11 @@ interface MonthlyLogProps {
   data: PayoffStep[];
 }
 
+const currencyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+});
+
 export const MonthlyLog: React.FC<MonthlyLogProps> = ({ data }) => {
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
@@ -30,9 +35,9 @@ export const MonthlyLog: React.FC<MonthlyLogProps> = ({ data }) => {
           </thead>
           <tbody className="divide-y divide-slate-50">
             {data.map((step, idx) => {
-              const isCleared = step.remainingBalance === 0;
+              const isCleared = step.remainingBalance <= 0.01;
               const prevStep = idx > 0 ? data[idx - 1] : null;
-              const justCleared = isCleared && prevStep && prevStep.remainingBalance > 0;
+              const justCleared = isCleared && prevStep && prevStep.remainingBalance > 0.01;
 
               return (
                 <tr 
@@ -52,21 +57,21 @@ export const MonthlyLog: React.FC<MonthlyLogProps> = ({ data }) => {
                               : 'bg-slate-50 text-slate-600 border-slate-200'
                           }`}
                         >
-                          {p.debtName}: ${Math.round(p.amount).toLocaleString()}
+                          {p.debtName}: {currencyFormatter.format(p.amount)}
                         </span>
                       ))}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`text-sm font-bold ${isCleared ? 'text-emerald-600' : 'text-slate-900'}`}>
-                      {isCleared ? 'DEBT FREE' : `$${Math.round(step.remainingBalance).toLocaleString()}`}
+                      {isCleared ? 'DEBT FREE' : currencyFormatter.format(step.remainingBalance)}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-xs font-medium text-slate-600">
-                    ${Math.round(step.totalPaid).toLocaleString()}
+                    {currencyFormatter.format(step.totalPaid)}
                   </td>
                   <td className="px-6 py-4 text-xs font-medium text-rose-500">
-                    ${Math.round(step.totalInterest).toLocaleString()}
+                    {currencyFormatter.format(step.totalInterest)}
                   </td>
                 </tr>
               );

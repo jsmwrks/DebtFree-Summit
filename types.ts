@@ -31,4 +31,6 @@ export interface MotivationalMessage {
   pepTalk: string;
   nextMilestone: string;
   financialTip: string;
+  budgetAdvice?: string;
+  healthScore?: number;
 }

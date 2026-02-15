@@ -7,9 +7,13 @@ interface VisualProgressProps {
   data: PayoffStep[];
 }
 
-export const VisualProgress: React.FC<VisualProgressProps> = ({ data }) => {
-  const formatCurrency = (value: number) => `$${value.toLocaleString()}`;
+const currencyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+});
 
+export const VisualProgress: React.FC<VisualProgressProps> = ({ data }) => {
   return (
     <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
       <div className="flex items-center justify-between mb-6">
@@ -39,7 +43,7 @@ export const VisualProgress: React.FC<VisualProgressProps> = ({ data }) => {
             <YAxis 
               axisLine={false} 
               tickLine={false} 
-              tickFormatter={formatCurrency}
+              tickFormatter={(val) => currencyFormatter.format(val)}
               tick={{fill: '#64748b', fontSize: 10, fontWeight: 600}}
             />
             <Tooltip 
@@ -50,7 +54,7 @@ export const VisualProgress: React.FC<VisualProgressProps> = ({ data }) => {
                 backgroundColor: 'white'
               }}
               labelStyle={{ fontWeight: 700, color: '#1e293b', marginBottom: '4px' }}
-              formatter={(value: number) => [formatCurrency(value), "Total Debt Balance"]}
+              formatter={(value: number) => [new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value), "Total Debt Balance"]}
             />
             <Area 
               type="monotone" 
