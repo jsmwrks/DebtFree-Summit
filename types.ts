@@ -12,12 +12,19 @@ export interface Debt {
   minimumPayment: number;
 }
 
+export interface PaymentEntry {
+  debtName: string;
+  amount: number;
+  isExtra?: boolean;
+}
+
 export interface PayoffStep {
   month: number;
   date: string;
   remainingBalance: number;
   totalPaid: number;
   totalInterest: number;
+  payments: PaymentEntry[];
 }
 
 export interface MotivationalMessage {
